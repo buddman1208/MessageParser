@@ -45,7 +45,7 @@ object SMSEventHandler {
 
         val client = AsyncHttpClient()
         val params = JSONObject()
-        params.put("from", from)
+        params.put("sender", from)
         params.put("received", mPhoneNumber)
         params.put("message", URLEncoder.encode(message, "UTF-8"))
         params.put("key", set.key)
