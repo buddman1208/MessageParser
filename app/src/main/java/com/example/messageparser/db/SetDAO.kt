@@ -1,4 +1,4 @@
-package com.example.messageparser
+package com.example.messageparser.db
 
 import androidx.room.*
 

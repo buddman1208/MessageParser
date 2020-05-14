@@ -3,6 +3,8 @@ package com.example.messageparser
 import android.os.Bundle
 import android.view.View
 import androidx.appcompat.app.AppCompatActivity
+import com.example.messageparser.db.Set
+import com.example.messageparser.db.SetDB
 import kotlinx.android.synthetic.main.activity_add_edit.*
 import org.jetbrains.anko.doAsync
 import org.jetbrains.anko.toast

@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="utf-8"?>
+<menu xmlns:android="http://schemas.android.com/apk/res/android">
+    <item
+        android:id="@+id/testSend"
+        android:title="TEST SEND" />
+    <item
+        android:id="@+id/failures"
+        android:title="전송 실패 내역" />
+</menu>

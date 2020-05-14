@@ -3,14 +3,21 @@ package com.example.messageparser
 import android.content.Context
 import android.telephony.TelephonyManager
 import android.util.Log
-import com.loopj.android.http.AsyncHttpClient
-import com.loopj.android.http.AsyncHttpResponseHandler
-import cz.msebera.android.httpclient.Header
-import cz.msebera.android.httpclient.entity.StringEntity
+import com.example.messageparser.db.Failure
+import com.example.messageparser.db.FailureDB
+import com.example.messageparser.db.Set
+import com.example.messageparser.db.SetDB
+import okhttp3.OkHttpClient
+import okhttp3.ResponseBody
 import org.jetbrains.anko.doAsyncResult
-import org.json.JSONObject
+import retrofit2.Call
+import retrofit2.Callback
+import retrofit2.Response
+import retrofit2.Retrofit
+import retrofit2.converter.gson.GsonConverterFactory
 import java.net.URLDecoder
 import java.net.URLEncoder
+import java.util.concurrent.TimeUnit
 
 
 object SMSEventHandler {
@@ -34,7 +41,7 @@ object SMSEventHandler {
         }.get()
     }
 
-    private fun sendToServer(set: Set, from : String, message: String) {
+    public fun sendToServer(set: Set, from : String, message: String) {
 
         val tMgr = AppController.context.getSystemService(Context.TELEPHONY_SERVICE) as TelephonyManager
         val mPhoneNumber = try {
@@ -43,41 +50,53 @@ object SMSEventHandler {
             ""
         }
 
-        val client = AsyncHttpClient()
-        val params = JSONObject()
-        params.put("sender", from)
-        params.put("received", mPhoneNumber)
-        params.put("message", URLEncoder.encode(message, "UTF-8"))
-        params.put("key", set.key)
+        val client = OkHttpClient.Builder()
+            .connectTimeout(10, TimeUnit.SECONDS)
+            .retryOnConnectionFailure(true)
+            .build()
 
-        val entity = StringEntity(params.toString())
-        client.post(
-            AppController.context,
-            set.sendUrl,
-            entity,
-            "application/json",
-            object : AsyncHttpResponseHandler() {
-                override fun onSuccess(
-                    statusCode: Int,
-                    headers: Array<out Header>?,
-                    responseBody: ByteArray?
-                ) {
-                    responseBody?.run {
-                        Log.e("asdf", "statusCode $statusCode responseBody ${URLDecoder.decode(String(responseBody), "UTF-8")}")
-                    }
-                }
+        val retrofit = Retrofit
+            .Builder()
+            .client(client)
+            .baseUrl("https://your.api.url/")
+            .addConverterFactory(GsonConverterFactory.create())
+            .build()
 
-                override fun onFailure(
-                    statusCode: Int,
-                    headers: Array<out Header>?,
-                    responseBody: ByteArray?,
-                    error: Throwable?
-                ) {
-                    error?.run {
-                        Log.e("asdf", "statusCode $statusCode responseBody ${error.localizedMessage ?: ""}")
-                    }
-                }
-            }
+        val service = retrofit.create(SendService::class.java)
+        val model = PostModel(
+            sender = from,
+            received = mPhoneNumber,
+            message = URLEncoder.encode(message, "UTF-8"),
+            key = set.key
         )
+        service.postToServer(
+            set.sendUrl,
+            model
+        ).enqueue(object : Callback<ResponseBody>{
+            override fun onFailure(call: Call<ResponseBody>, t: Throwable) {
+                    Log.e("asdf", "responseBody ${t.message ?: ""}")
+                addFailure(set, model)
+            }
+
+            override fun onResponse(call: Call<ResponseBody>, response: Response<ResponseBody>) {
+                    Log.e("asdf", "statusCode ${response.code()} responseBody ${URLDecoder.decode(response.body()?.string() ?: "", "UTF-8")}")
+            }
+        })
+    }
+
+
+    private fun addFailure(set : Set, model: PostModel) {
+        doAsyncResult {
+            FailureDB.getInstance(AppController.context)?.failureDao()?.insertFailures(
+                Failure(
+                    sender = set.from,
+                    received = model.received,
+                    message = model.message,
+                    key = model.key,
+                    createDate = System.currentTimeMillis(),
+                    url = set.sendUrl
+                )
+            )
+        }.get()
     }
 }

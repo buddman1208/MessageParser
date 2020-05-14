@@ -1,3 +1,5 @@
 <resources>
     <string name="app_name">MessageParser</string>
+    <string name="retry">재전송</string>
+    <string name="delete">삭제</string>
 </resources>

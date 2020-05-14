@@ -2,6 +2,8 @@ package com.example.messageparser
 
 import android.Manifest
 import android.os.Bundle
+import android.view.Menu
+import android.view.MenuItem
 import android.view.View
 import android.widget.TextView
 import androidx.appcompat.app.AppCompatActivity
@@ -12,12 +14,15 @@ import com.afollestad.recyclical.datasource.DataSource
 import com.afollestad.recyclical.datasource.dataSourceTypedOf
 import com.afollestad.recyclical.setup
 import com.afollestad.recyclical.withItem
+import com.example.messageparser.db.Set
+import com.example.messageparser.db.SetDB
 import com.gun0912.tedpermission.PermissionListener
 import com.gun0912.tedpermission.TedPermission
 import kotlinx.android.synthetic.main.activity_main.*
 import org.jetbrains.anko.doAsyncResult
 import org.jetbrains.anko.intentFor
 import org.jetbrains.anko.startActivity
+import org.jetbrains.anko.toast
 import java.util.*
 
 class MainActivity : AppCompatActivity() {
@@ -54,6 +59,7 @@ class MainActivity : AppCompatActivity() {
         btnAdd.setOnClickListener {
             startActivity<AddEditActivity>()
         }
+
         updateList()
         isLoaded = true
     }
@@ -88,6 +94,30 @@ class MainActivity : AppCompatActivity() {
 
     private fun updateStatus(itemCount : Int) {
         tvStatus.text = "현재 등록된 설정값 $itemCount 건"
+    }
+
+    override fun onCreateOptionsMenu(menu: Menu?): Boolean {
+        menuInflater.inflate(
+            R.menu.menu_main,
+            menu
+        )
+        return super.onCreateOptionsMenu(menu)
+    }
+
+    override fun onOptionsItemSelected(item: MenuItem): Boolean {
+        when(item.itemId) {
+            R.id.testSend -> {
+                if(setList.size() > 0) {
+                    SMSEventHandler.sendToServer(setList[0], "16449999", "은행입니다~~")
+                } else toast("최소 한개의 설정값을 추가해주세요")
+            }
+            R.id.failures -> goToFailureActivity()
+        }
+        return super.onOptionsItemSelected(item)
+    }
+
+    private fun goToFailureActivity() {
+        startActivity<FailureActivity>()
     }
 }
 
